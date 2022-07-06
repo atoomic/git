@@ -5,17 +5,17 @@
 
 typedef struct sha256_ctx nettle_SHA256_CTX;
 
-inline void nettle_SHA256_Init(nettle_SHA256_CTX *ctx)
+static inline void nettle_SHA256_Init(nettle_SHA256_CTX *ctx)
 {
 	sha256_init(ctx);
 }
 
-inline void nettle_SHA256_Update(nettle_SHA256_CTX *ctx, const void *data, size_t len)
+static inline void nettle_SHA256_Update(nettle_SHA256_CTX *ctx, const void *data, size_t len)
 {
 	sha256_update(ctx, len, data);
 }
 
-inline void nettle_SHA256_Final(unsigned char *digest, nettle_SHA256_CTX *ctx)
+static inline void nettle_SHA256_Final(unsigned char *digest, nettle_SHA256_CTX *ctx)
 {
 	sha256_digest(ctx, SHA256_DIGEST_SIZE, digest);
 }
