@@ -673,7 +673,7 @@ static int checkout(int submodule_progress, int filter_submodules)
 	head = resolve_refdup("HEAD", RESOLVE_REF_READING, &oid, NULL);
 	if (!head) {
 		warning(_("remote HEAD refers to nonexistent ref, "
-			  "unable to checkout.\n"));
+			  "unable to checkout"));
 		return 0;
 	}
 	if (!strcmp(head, "HEAD")) {
@@ -865,6 +865,26 @@ static int path_exists(const char *path)
 {
 	struct stat sb;
 	return !stat(path, &sb);
+}
+
+static void setup_unborn_head(const char *target, const char *reflog_msg)
+{
+	const char *branch;
+	const char *ref;
+	char *ref_free = NULL;
+
+	if (target && skip_prefix(target, "refs/heads/", &branch)) {
+		ref = target;
+		create_symref("HEAD", ref, reflog_msg);
+	} else {
+		branch = git_default_branch_name(0);
+		ref_free = xstrfmt("refs/heads/%s", branch);
+		ref = ref_free;
+	}
+
+	if (!option_bare)
+		install_branch_config(0, branch, remote_name, ref);
+	free(ref_free);
 }
 
 int cmd_clone(int argc, const char **argv, const char *prefix)
@@ -1279,15 +1299,14 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 			if (!our_head_points_at)
 				die(_("Remote branch %s not found in upstream %s"),
 				    option_branch, remote_name);
-		}
-		else
+		} else {
 			our_head_points_at = remote_head_points_at;
+			if (!our_head_points_at)
+				setup_unborn_head(transport_ls_refs_options.unborn_head_target,
+						  reflog_msg.buf);
+		}
 	}
 	else {
-		const char *branch;
-		const char *ref;
-		char *ref_free = NULL;
-
 		if (option_branch)
 			die(_("Remote branch %s not found in upstream %s"),
 					option_branch, remote_name);
@@ -1298,20 +1317,8 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 		remote_head = NULL;
 		option_no_checkout = 1;
 
-		if (transport_ls_refs_options.unborn_head_target &&
-		    skip_prefix(transport_ls_refs_options.unborn_head_target,
-				"refs/heads/", &branch)) {
-			ref = transport_ls_refs_options.unborn_head_target;
-			create_symref("HEAD", ref, reflog_msg.buf);
-		} else {
-			branch = git_default_branch_name(0);
-			ref_free = xstrfmt("refs/heads/%s", branch);
-			ref = ref_free;
-		}
-
-		if (!option_bare)
-			install_branch_config(0, branch, remote_name, ref);
-		free(ref_free);
+		setup_unborn_head(transport_ls_refs_options.unborn_head_target,
+				  reflog_msg.buf);
 	}
 
 	write_refspec_config(src_ref_prefix, our_head_points_at,
