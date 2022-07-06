@@ -1298,9 +1298,12 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 			if (!our_head_points_at)
 				die(_("Remote branch %s not found in upstream %s"),
 				    option_branch, remote_name);
-		}
-		else
+		} else {
 			our_head_points_at = remote_head_points_at;
+			if (!our_head_points_at)
+				setup_unborn_head(transport_ls_refs_options.unborn_head_target,
+						  reflog_msg.buf);
+		}
 	}
 	else {
 		if (option_branch)
